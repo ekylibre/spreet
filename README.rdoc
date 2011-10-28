@@ -1,0 +1,3 @@
+= Spreet
+
+Universal handler for spr[eadsh]eets.
