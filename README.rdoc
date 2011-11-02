@@ -47,4 +47,4 @@ This gems is a handler for spreadsheets. With its independent API, it is possibl
 * PDF Writer like OpenOffice/LibreOffice would make it
 
 == Travis
-{<img src="https://secure.travis-ci.org/ekylibre/ekylibre.png"/>}[http://travis-ci.org/ekylibre/ekylibre]
+{<img src="https://secure.travis-ci.org/burisu/spreet.png"/>}[http://travis-ci.org/burisu/spreet]
