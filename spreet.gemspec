@@ -15,9 +15,8 @@ Gem::Specification.new do |s|
     "README.rdoc"
   ]
   s.test_files = `git ls-files test/test_*.rb`.split("\n") 
-  exclusions = [ "#{s.name}.gemspec", ".travis.yml", ".gitignore", "Gemfile" ]
-
-  s.files = `git ls-files`.split("\n").delete_if{|f| f == "#{s.name}.gemspec"}
+  exclusions = [ "#{s.name}.gemspec", ".travis.yml", ".gitignore", "Gemfile", "Rakefile" ]
+  s.files = `git ls-files`.split("\n").delete_if{|f| exclusions.include?(f)}
   s.homepage = "http://github.com/burisu/spreet"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
