@@ -1,6 +1,19 @@
 # encoding: utf-8
+require 'pathname'
 
 module Spreet
+
+  module VERSION
+    version = nil
+    File.open("VERSION") {|f| version = f.read.split('.')}
+    MAJOR = version[0].to_i.freeze
+    MINOR = version[1].to_i.freeze
+    TINY  = version[2].to_i.freeze
+    PATCH = TINY.freeze
+    PRE   = version[3].freeze
+    STRING = version.freeze
+  end
+
 
   class Coordinates
     # Limit coordinates x and y in 0..65535 but coordinates are in one integer of 32 bits

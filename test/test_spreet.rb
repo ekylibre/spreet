@@ -19,7 +19,15 @@ class TestSpreet < Test::Unit::TestCase
     assert Spreet::Coordinates.new(0,1) <=> Spreet::Coordinates.new(1,0)
   end
   
-
+  def test_spreet_version
+    assert_not_nil Spreet::VERSION
+    assert_not_nil Spreet::VERSION::MAJOR
+    assert_not_nil Spreet::VERSION::MINOR
+    assert_not_nil Spreet::VERSION::TINY
+    assert_not_nil Spreet::VERSION::PATCH
+    assert_equal(Spreet::VERSION::TINY, Spreet::VERSION::PATCH, "PATCH code must have the same value as TINY")
+    assert((Spreet::VERSION::MAJOR > 0 or Spreet::VERSION::MINOR > 0 or Spreet::VERSION::TINY > 0), "Version cannot be 0.0.0")
+  end
 
   def test_spreet
     assert_not_nil Spreet
@@ -47,9 +55,6 @@ class TestSpreet < Test::Unit::TestCase
     sheet["F20"] = Date.today
 
     spreet.write("test/samples/cleaned-nothing.ods")
-
-    # puts spreet.to_term
-
   end
 
 
