@@ -1,9 +1,6 @@
 # encoding: utf-8
-require 'csv'
 
 module Spreet
-  # Universal CSV support
-  CSV = (::CSV.const_defined?(:Reader) ? ::FasterCSV : ::CSV).freeze
 
   class Coordinates
     # Limit coordinates x and y in 0..65535 but coordinates are in one integer of 32 bits
@@ -63,17 +60,18 @@ module Spreet
 
   # Represents a cell in a sheet
   class Cell
-    attr_reader :text, :value, :sheet, :coordinates
+    attr_reader :text, :value, :type, :sheet, :coordinates
 
     def initialize(sheet, *args)
       @sheet = sheet
       @coordinates = Coordinates.new(*args)
-      value = nil
+      self.value = nil
       @empty = true
     end
 
     def value=(val)
       @value = val
+      @type = determine_type
       @text = val.to_s
       @empty = false
     end
@@ -82,8 +80,8 @@ module Spreet
       @empty
     end
 
-    def clear
-      value = nil
+    def clear!
+      self.value = nil
       @empty = true
     end
 
@@ -95,7 +93,28 @@ module Spreet
       self.coordinates <=> other_cell.coordinates
     end
 
+    private
+    
+    def determine_type
+      if value.is_a? Date
+        :date
+      elsif value.is_a? Integer
+        :integer
+      elsif value.is_a? Numeric
+        :decimal
+      elsif value.is_a? DateTime
+        :datetime
+      elsif value.is_a?(TrueClass) or value.is_a?(FalseClass)
+        :boolean
+      elsif value.nil?
+        :null
+      else
+        :string
+      end
+    end
+
   end
+
 
   class Sheet
     attr_reader :document, :name, :columns
@@ -143,15 +162,27 @@ module Spreet
       value = args.delete_at(-1)
       cell = self[*args]
       cell.value = value
+      @bound = compute_bound
     end
 
     def row(*args)
+      options = {}
       options = args.delete_at(-1) if args[-1].is_a? Hash
       row = options[:row] || @current_row
       args.each_index do |index|
-        @cells[index, row] = args[index]
+        self[index, row] = args[index]
       end
       next_row
+    end
+
+    def each_row(&block)
+      for j in 0..bound.y
+        row = []
+        for i in 0..bound.x
+          row[i] = self[i, j]
+        end
+        yield row
+      end
     end
 
     # Find or build cell
@@ -188,7 +219,7 @@ module Spreet
 
     def compute_bound
       bound = Coordinates.new
-      for cell in @cells
+      for id, cell in @cells
         unless cell.empty?
           bound.x = cell.coordinates.x if cell.coordinates.x > bound.x
           bound.y = cell.coordinates.y if cell.coordinates.x > bound.y
@@ -260,7 +291,7 @@ module Spreet
 
   class Document
     attr_reader :sheets
-    @@formats = {}
+    @@handlers = {}
     @@associations = {}
     
     def initialize(option={})
@@ -278,37 +309,48 @@ module Spreet
       return text
     end
 
+    def write(file, options={})
+      handler = self.class.extract_handler(file, options.delete(:format))
+      handler.write(self, file, options)
+    end
+
     class << self
     
-      def register_format(klass, name, options={})
+      def register_handler(klass, name, options={})
         if klass.respond_to?(:read) or klass.respond_to?(:write)
           if name.is_a?(Symbol)
-            @@formats[name] = options.merge(:class=>klass)
+            @@handlers[name] = klass # options.merge(:class=>klass)
           elsif
             raise ArgumentError.new("Name is invalid. Symbol expected, #{name.class.name} got.")
           end
         else
-          raise ArgumentError.new("Format do not support :read or :write method.")
+          raise ArgumentError.new("Handler do not support :read or :write method.")
         end
       end
       
       def read(file, options={})
+        handler = extract_handler(file, options.delete(:format))
+        return handler.read(file, options)
+      end
+
+      def extract_handler(file, handler_name=nil)
         file_path = Pathname.new(file)
-        format = nil
-        if options[:format]
-          format = @@formats[options.delete(:format)]
+        extension = file_path.extname.to_s[1..-1]
+        if !handler_name and extension.size > 0
+          handler_name = extension.to_sym
+        end
+        if @@handlers[handler_name]
+          return @@handlers[handler_name]
         else
-          for formater in @@formats
-            # if formater.respond_to? :
-          end
+          raise ArgumentError.new("No corresponding handler (#{handler_name.inspect}). Available: #{@@handlers.keys.collect{|k| k.inspect}.join(', ')}.")
         end
       end
-      
-      def write(file, options={})
-      end
+
     end
 
 
   end  
 
 end
+
+require 'spreet/handlers'

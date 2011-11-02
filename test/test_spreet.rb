@@ -46,9 +46,40 @@ class TestSpreet < Test::Unit::TestCase
 
     sheet["F20"] = Date.today
 
-    puts spreet.to_term
+    spreet.write("test/samples/cleaned-nothing.ods")
+
+    # puts spreet.to_term
 
   end
+
+
+  def test_handlers
+    doc = nil
+    assert_nothing_raised do
+      doc = Spreet::Document.read("test/samples/pascal.csv")
+    end
+
+    sheet = doc.sheets[0]
+    sheet.each_row do |row|
+      for cell in row
+        if cell.text.to_i == 0
+          cell.clear!
+        end
+      end
+    end
+    
+    doc.write("test/samples/cleaned-pascal.csv", :format=>:xcsv)
+    doc.write("test/samples/cleaned-pascal.ods")
+    
+    assert_nothing_raised do
+      doc = Spreet::Document.read("test/samples/cleaned-pascal.csv", :format=>:xcsv)
+    end
+
+    FileUtils.rm_f("test/samples/cleaned-pascal.csv")
+  end
+
+
+  
 
 end
 
