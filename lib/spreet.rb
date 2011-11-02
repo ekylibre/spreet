@@ -10,6 +10,9 @@ module Spreet
     CPU_SEMI_WIDTH = 16 # ((RUBY_PLATFORM.match(/^[^\-]*[^\-0-9]64/) ? 64 : 32) / 2).freeze
     Y_FILTER = ((1 << CPU_SEMI_WIDTH) - 1).freeze
 
+    BASE_26_BEF = "0123456789abcdefghijklmnop"
+    BASE_26_AFT = "abcdefghijklmnopqrstuvwxyz"
+
     attr_accessor :x, :y
     def initialize(*args)
       value = (args.size == 1 ? args[0] : args)
@@ -17,14 +20,14 @@ module Spreet
       if value.is_a? String
         if value.downcase.match(/^[a-z]+[0-9]+$/)
           value = value.downcase.split(/([A-Z]+|[0-9]+)/).delete_if{|x| x.size.zero?}
-          @x, @y = value[0].to_i(36), value[1].to_i(10)
+          @x, @y = value[0].tr(BASE_26_AFT, BASE_26_BEF).to_i(26), value[1].to_i(10)-1
         elsif value.downcase.match(/^[0-9]+[^0-9]+[0-9]+$/)
           value = value.downcase.split(/[^0-9]+/)
           @x, @y = value[0].to_i(10), value[1].to_i(10)
         end
       elsif value.is_a? Integer
         @x, @y = (value >> CPU_SEMI_WIDTH), value & Y_FILTER
-      elsif value.is_a? Coordinate
+      elsif value.is_a? Coordinates
         @x, @y = value.x, value.y
       elsif value.is_a? Array
         @x, @y = value[0].to_i, value[1].to_i
@@ -34,7 +37,7 @@ module Spreet
     end
 
     def to_s
-      @x.to_s(36)+@y.to_s(10)
+      @x.to_s(26).tr(BASE_26_BEF, BASE_26_AFT).upcase+(@y+1).to_s(10)
     end
 
     def to_a
@@ -48,38 +51,54 @@ module Spreet
     def to_i
       (@x << CPU_SEMI_WIDTH) + @y
     end
+
+    def ==(other_coordinate)
+      other_coordinate.x == self.x and other_coordinate.y == self.y
+    end
+
+    def <=>(other_coordinate)
+      self.to_i <=> other_coordinate.to_i
+    end
   end
 
+  # Represents a cell in a sheet
   class Cell
-    def initialize(cells, *args)
-      @cells = cells
-      @coordinates = Coordinates.new(*args)
-    end
-  end
+    attr_reader :text, :value, :sheet, :coordinates
 
-  class Columns
-  end
-
-  class Cells
-    def initialize(sheet)
+    def initialize(sheet, *args)
       @sheet = sheet
-      @cells = {}
+      @coordinates = Coordinates.new(*args)
+      value = nil
+      @empty = true
     end
 
-    def [](*args)
-      coord = Coordinates.new(*args)
-      return @cells[coord.to_i] || Cell.new(self, coord)
+    def value=(val)
+      @value = val
+      @text = val.to_s
+      @empty = false
     end
-    
-    def []=(*args)
-      raise args.inspect
-      # cell = self[]
+
+    def empty?
+      @empty
     end
-    
+
+    def clear
+      value = nil
+      @empty = true
+    end
+
+    def remove!
+      @sheet.remove(self.coordinates)
+    end
+
+    def <=>(other_cell)
+      self.coordinates <=> other_cell.coordinates
+    end
+
   end
 
   class Sheet
-    attr_reader :document, :name, :columns, :cells
+    attr_reader :document, :name, :columns
     attr_accessor :current_row
 
     def initialize(document, name=nil)
@@ -87,7 +106,7 @@ module Spreet
       self.name = name
       raise ArgumentError.new("Must be a Document") unless document.is_a? Document
       @current_row = 0
-      @cells = Cells.new(self)
+      @cells = {}
     end
 
     def name=(value)
@@ -101,6 +120,11 @@ module Spreet
       @name = value
     end
 
+    def cells
+      @cells.delete_if{|k,v| v.empty?}
+      @cells.values
+    end
+
     def next_row(increment = 1)
       @current_row += increment
     end
@@ -109,11 +133,23 @@ module Spreet
       @current_row -= increment
     end
 
+    def [](*args)
+      coord = Coordinates.new(*args)
+      @cells[coord.to_i] ||= Cell.new(self, coord)
+      return @cells[coord.to_i]
+    end
+
+    def []=(*args)
+      value = args.delete_at(-1)
+      cell = self[*args]
+      cell.value = value
+    end
+
     def row(*args)
       options = args.delete_at(-1) if args[-1].is_a? Hash
       row = options[:row] || @current_row
       args.each_index do |index|
-        cells[index, row] = args[index]
+        @cells[index, row] = args[index]
       end
       next_row
     end
@@ -123,6 +159,15 @@ module Spreet
       return c
     end
     
+    def bound
+      @bound
+    end
+
+    def remove!(coordinates)
+      raise ArgumentError.new("Must be a Coordinates") unless document.is_a?(Coordinates)
+      @cells.delete(coordinates.to_i)
+      @bound = compute_bound
+    end
 
     # Moves the sheet to an other position in the list of sheets
     def move_to(position)
@@ -139,13 +184,26 @@ module Spreet
       @document.sheets.move(self, -increment)
     end
 
+    private
+
+    def compute_bound
+      bound = Coordinates.new
+      for cell in @cells
+        unless cell.empty?
+          bound.x = cell.coordinates.x if cell.coordinates.x > bound.x
+          bound.y = cell.coordinates.y if cell.coordinates.x > bound.y
+        end
+      end
+      return bound
+    end
+
   end
 
 
   class Sheets
 
     def initialize(document)
-      raise ArgumentError.new("Must be a Document") unless document.is_a? Document      
+      raise ArgumentError.new("Must be a Document") unless document.is_a?(Document)
       @document = document
       @array = []
     end
@@ -159,13 +217,17 @@ module Spreet
         @array.each_index do |i|
           return i if @array[i].name == name_or_sheet
         end
+      elsif name_or_sheet.is_a? Integer
+        return (@array[name_or_sheet].nil? ? nil : name_or_sheet)
       else
         return @array.index(name_or_sheet)
       end
     end
 
     def add(name=nil, position=-1)
-      @array.insert(position, Sheet.new(@document, name))
+      sheet = Sheet.new(@document, name)
+      @array.insert(position, sheet)
+      return sheet
     end
 
     def [](sheet)
@@ -198,6 +260,8 @@ module Spreet
 
   class Document
     attr_reader :sheets
+    @@formats = {}
+    @@associations = {}
     
     def initialize(option={})
       @sheets = Sheets.new(self)
@@ -207,9 +271,43 @@ module Spreet
       text = "Spreet (#{@sheets.count}):\n"
       for sheet in @sheets
         text << " - #{sheet.name}:\n"
+        for cell in sheet.cells.sort
+          text << "   - #{cell.coordinates.to_s}: #{cell.text.inspect}\n"
+        end
       end
       return text
     end
+
+    class << self
+    
+      def register_format(klass, name, options={})
+        if klass.respond_to?(:read) or klass.respond_to?(:write)
+          if name.is_a?(Symbol)
+            @@formats[name] = options.merge(:class=>klass)
+          elsif
+            raise ArgumentError.new("Name is invalid. Symbol expected, #{name.class.name} got.")
+          end
+        else
+          raise ArgumentError.new("Format do not support :read or :write method.")
+        end
+      end
+      
+      def read(file, options={})
+        file_path = Pathname.new(file)
+        format = nil
+        if options[:format]
+          format = @@formats[options.delete(:format)]
+        else
+          for formater in @@formats
+            # if formater.respond_to? :
+          end
+        end
+      end
+      
+      def write(file, options={})
+      end
+    end
+
 
   end  
 
