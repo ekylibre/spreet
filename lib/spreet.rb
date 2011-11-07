@@ -1,5 +1,8 @@
 # encoding: utf-8
 require 'pathname'
+require 'duration'
+require 'money'
+require 'time'
 
 module Spreet
 
@@ -85,7 +88,7 @@ module Spreet
     def value=(val)
       @value = val
       @type = determine_type
-      @text = val.to_s
+      self.text = val
       @empty = false
     end
 
@@ -106,21 +109,24 @@ module Spreet
       self.coordinates <=> other_cell.coordinates
     end
 
+    def text=(val)
+      @text = val.to_s
+    end
+
     private
+
     
     def determine_type
-      if value.is_a? Date
+      if value.is_a? Date or value.is_a? DateTime
         :date
-      elsif value.is_a? Integer
-        :integer
-      elsif value.is_a? Numeric
-        :decimal
-      elsif value.is_a? DateTime
-        :datetime
+      elsif value.is_a? Numeric # or percentage
+        :float
+      elsif value.is_a? Money
+        :currency
+      elsif value.is_a? Duration
+        :time
       elsif value.is_a?(TrueClass) or value.is_a?(FalseClass)
         :boolean
-      elsif value.nil?
-        :null
       else
         :string
       end
@@ -139,6 +145,7 @@ module Spreet
       raise ArgumentError.new("Must be a Document") unless document.is_a? Document
       @current_row = 0
       @cells = {}
+      @bound = compute_bound
     end
 
     def name=(value)
@@ -280,11 +287,14 @@ module Spreet
     end
 
     def remove(sheet)
-      @array.delete(sheet)
+      @array.delete_at(index(sheet))
     end
 
     def move(sheet, shift=0)
-      move_at(sheet, index(sheet) + shift)
+      position = index(sheet) + shift
+      position = 0 if position < 0
+      position = self.count-1 if position >= self.count
+      move_at(sheet, position)
     end
 
     def move_at(sheet, position=-1)

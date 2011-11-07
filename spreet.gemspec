@@ -21,5 +21,6 @@ Gem::Specification.new do |s|
   s.send(add_runtime_dependency, "fastercsv", [">= 0"])
   s.send(add_runtime_dependency, "libxml-ruby", [">= 0"])
   s.send(add_runtime_dependency, "rubyzip", [">= 0.9.4"])
+  s.send(add_runtime_dependency, "money", [">= 4.0.0"])
 end
 

@@ -1,5 +1,6 @@
 # encoding: utf-8
 require 'helper'
+require "digest/sha2"
 
 class TestSpreet < Test::Unit::TestCase
   
@@ -34,10 +35,35 @@ class TestSpreet < Test::Unit::TestCase
 
     spreet = Spreet::Document.new
     assert_not_nil spreet
+    assert_equal 0, spreet.sheets.count
     sheet = spreet.sheets.add
     assert_not_nil sheet
+    assert_equal 1, spreet.sheets.count
     assert_not_nil spreet.sheets.add("Feuille 2")
+    assert_equal 2, spreet.sheets.count
     assert_not_nil spreet.sheets.add("ソフト 3")
+    assert_equal 3, spreet.sheets.count
+    assert_not_nil spreet.sheets.add("Feuille 4")
+    assert_equal 4, spreet.sheets.count
+    spreet.sheets.remove("Feuille 2")
+    assert_equal 3, spreet.sheets.count
+    assert_equal "Sheet 1", spreet.sheets[0].name
+    assert_equal "ソフト 3", spreet.sheets[1].name
+    assert_equal "Feuille 4", spreet.sheets[2].name
+    spreet.sheets[2].name = "Feuille 2"
+    spreet.sheets.move("Feuille 2", -1)
+    assert_equal 1, spreet.sheets.index("Feuille 2")
+    spreet.sheets.move("Feuille 2", -10)
+    assert_equal 0, spreet.sheets.index("Feuille 2")
+    spreet.sheets.move("Feuille 2", +10)
+    assert_equal 2, spreet.sheets.index("Feuille 2")
+    spreet.sheets.move_at("Feuille 2", 1)
+    assert_equal 1, spreet.sheets.index("Feuille 2")
+    assert_equal "Sheet 1", spreet.sheets[0].name
+    assert_equal "Feuille 2", spreet.sheets[1].name
+    assert_equal "ソフト 3", spreet.sheets[2].name
+    spreet.sheets.add "Empty sheet"
+    assert_equal 4, spreet.sheets.count
 
     assert_equal Spreet::Sheet, spreet.sheets[1].class
     assert_equal "Feuille 2", spreet.sheets[1].name
@@ -55,6 +81,20 @@ class TestSpreet < Test::Unit::TestCase
     sheet["F20"] = Date.today
 
     spreet.write("test/samples/cleaned-nothing.ods")
+
+    spreet2 = Spreet::Document.read("test/samples/cleaned-nothing.ods")
+
+    spreet2.write("test/samples/cleaned-nothing2.ods")
+
+    # Assert equality of file size ?
+    checksums = []
+    File.open("test/samples/cleaned-nothing.ods", "rb") do |f|
+      checksums << Digest::SHA256.hexdigest(f.read)
+    end
+    File.open("test/samples/cleaned-nothing2.ods", "rb") do |f|
+      checksums << Digest::SHA256.hexdigest(f.read)
+    end
+    assert_equal checksums[0], checksums[1], "SHA256 sums differs between the copy and the original. Check if the reader is a good 'mirror' of the writer..."
   end
 
 
