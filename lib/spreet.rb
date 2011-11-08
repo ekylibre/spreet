@@ -22,23 +22,38 @@ module Spreet
   # Represents a cell in a sheet
   class Cell
     attr_reader :text, :value, :type, :sheet, :coordinates
+    attr_accessor :annotation
 
     def initialize(sheet, *args)
       @sheet = sheet
       @coordinates = Coordinates.new(*args)
       self.value = nil
       @empty = true
+      @covered = false # determine_covered
+      @annotation = nil
     end
 
     def value=(val)
-      @value = val
-      @type = determine_type
-      self.text = val
-      @empty = false
+      if val.is_a?(Cell)
+        @value = val.value
+        @type = val.type
+        self.text = val.text
+        @empty = val.empty?
+        @annotation = val.annotation
+      else
+        @value = val
+        @type = determine_type
+        self.text = val
+        @empty = false
+      end
     end
 
     def empty?
       @empty
+    end
+    
+    def covered?
+      @covered
     end
 
     def clear!
@@ -58,6 +73,10 @@ module Spreet
       @text = val.to_s
     end
 
+    def inspect
+      "<#{self.coordinates}: #{self.text.inspect}#{'('+self.value.inspect+')' if self.text != self.value}>"
+    end
+
     private
 
     
@@ -72,7 +91,7 @@ module Spreet
         :time
       elsif value.is_a?(TrueClass) or value.is_a?(FalseClass)
         :boolean
-      else
+      else # if value.is_a?(String)
         :string
       end
     end
@@ -140,13 +159,18 @@ module Spreet
       next_row
     end
 
+    def rows(index)
+      row = []
+      for i in 0..bound.x
+        row[i] = self[i, index]
+      end
+      return row
+    end
+
     def each_row(&block)
+      # @bound = compute_bound
       for j in 0..bound.y
-        row = []
-        for i in 0..bound.x
-          row[i] = self[i, j]
-        end
-        yield row
+        yield rows(j)
       end
     end
 
@@ -183,11 +207,11 @@ module Spreet
     private
 
     def compute_bound
-      bound = Coordinates.new
+      bound = Coordinates.new(0,0)
       for id, cell in @cells
         unless cell.empty?
           bound.x = cell.coordinates.x if cell.coordinates.x > bound.x
-          bound.y = cell.coordinates.y if cell.coordinates.x > bound.y
+          bound.y = cell.coordinates.y if cell.coordinates.y > bound.y
         end
       end
       return bound

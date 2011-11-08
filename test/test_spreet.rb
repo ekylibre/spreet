@@ -63,6 +63,7 @@ class TestSpreet < Test::Unit::TestCase
     assert_not_nil sheet["C30"]
 
     sheet["F20"] = Date.today
+    sheet["F20"].annotation = "Date.today"
 
     spreet.write("test/samples/cleaned-nothing.ods")
 
@@ -74,6 +75,38 @@ class TestSpreet < Test::Unit::TestCase
     assert_checksums "test/samples/cleaned-nothing.ods", "test/samples/cleaned-nothing2.ods", "SHA256 sums differs between the copy and the original. Check if the reader is a good 'mirror' of the writer..." 
   end
   
+
+  def test_pascal
+    size = 25
+    doc = Spreet::Document.new
+    sheet = doc.sheets.add("Pascal Tree")
+    sheet[0,0] = 1
+    start = Time.now
+    for y in 1..(size-1)
+      sheet[0,y] = 1
+      for x in 1..(size-1)
+        sheet[x,y] = sheet[x,y-1].value.to_i + sheet[x-1,y-1].value.to_i
+        sheet[x,y].clear! if sheet[x,y].value.zero?
+      end
+    end
+    stop = Time.now
+    sheet["B1"] = "Computed in #{stop-start} seconds"
+
+    assert_equal size-1, sheet.bound.x
+    assert_equal size-1, sheet.bound.y
+
+    assert_nothing_raised do
+      doc.write("test/samples/pascal-tree-#{size}.ods")
+    end
+    assert_nothing_raised do
+      doc.write("test/samples/pascal-tree-#{size}.csv")
+    end
+    assert_nothing_raised do
+      doc.write("test/samples/pascal-tree-#{size}.xcsv")
+    end
+  end
+
+
 
 end
 

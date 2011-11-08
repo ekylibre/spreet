@@ -102,54 +102,87 @@ module Spreet
                 sheet = spreet.sheets.add(table["name"])
                 # Ignore table-column for now
 
-                # Expand rows and cells
-                array = []
-                for row in table.find('./table:table-row', XMLNS_TABLE)
-                  line = []
-                  for cell in row.find('./table:table-cell', XMLNS_TABLE)
-                    (cell["number-columns-repeated"]||'1').to_i.times do
-                      line << cell
-                    end
-                  end
-                  (row["number-rows-repeated"]||'1').to_i.times do
-                    array << line
-                  end
-                end
+                rows = table.find("./table:table-rows").first || table
+                # # Expand rows and cells
+                # array = []
+                # for row in table.find('./table:table-row', XMLNS_TABLE)
+                #   line = []
+                #   for cell in row.find('./table:table-cell', XMLNS_TABLE)
+                #     (cell["number-columns-repeated"]||'1').to_i.times do
+                #       line << cell
+                #     end
+                #   end
+                #   (row["number-rows-repeated"]||'1').to_i.times do
+                #     array << line
+                #   end
+                # end
                 # Fill sheet
-                array.each_with_index do |row, y|
-                  row.each_with_index do |cell, x|
-                    if value_type = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "value-type")
-                      value_type = value_type.value.to_sym
-                      p = cell.find('./text:p', XMLNS_TEXT).first
-                      if [:float, :percentage].include?(value_type)
-                        value = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "value").value
-                        sheet[x,y] = value.to_f
-                      elsif value_type == :currency
-                        value = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "value").value
-                        currency = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "currency").value
-                        sheet[x,y] = Money.new(value, currency)
-                      elsif value_type == :date
-                        value = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "date-value").value
-                        if value.match(/\d{1,8}-\d{1,2}-\d{1,2}/)
-                          value = Date.civil(*value.split(/[\-]+/).collect{|v| v.to_f})
-                        elsif value.match(/\d{1,8}-\d{1,2}-\d{1,2}T\d{1,2}\:\d{1,2}\:\d{1,2}(\.\d+)?/)
-                          value = Time.new(*value.split(/[\-\:\.\T]+/).collect{|v| v.to_f})
-                        else
-                          raise Exception.new("Bad date format")
+                row_offset = 0
+                rows.find('./table:table-row', XMLNS_TABLE).each_with_index do |row, y|
+                  row_content, cell_offset = false, 0
+                  row.find('./table:table-cell|./table:covered-table-cell', XMLNS_TABLE).each_with_index do |cell, x|
+                    x += cell_offset
+                    cell_content = false
+                    if cell.name == "covered-table-cell"
+                      # puts "covered-table-cell"
+                    else
+                      if value_type = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "value-type")
+                        value_type = value_type.value.to_sym
+                        p = cell.find('./text:p', XMLNS_TEXT).first
+                        if [:float, :percentage].include?(value_type)
+                          value = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "value").value
+                          sheet[x,y] = value.to_f
+                        elsif value_type == :currency
+                          value = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "value").value
+                          currency = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "currency").value
+                          sheet[x,y] = Money.new(value, currency)
+                        elsif value_type == :date
+                          value = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "date-value").value
+                          if value.match(/\d{1,8}-\d{1,2}-\d{1,2}/)
+                            value = Date.civil(*value.split(/[\-]+/).collect{|v| v.to_f})
+                          elsif value.match(/\d{1,8}-\d{1,2}-\d{1,2}T\d{1,2}\:\d{1,2}\:\d{1,2}(\.\d+)?/)
+                            value = Time.new(*value.split(/[\-\:\.\T]+/).collect{|v| v.to_f})
+                          else
+                            raise Exception.new("Bad date format")
+                          end
+                          sheet[x,y] = value
+                        elsif value_type == :time
+                          value = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "time-value").value
+                          sheet[x,y] = Duration.new(value)
+                        elsif value_type == :boolean
+                          value = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "boolean-value").value
+                          sheet[x,y] = (value == "true" ? true : false)
+                        elsif value_type == :string
+                          sheet[x,y] = p.content.to_s if p
                         end
-                        sheet[x,y] = value
-                      elsif value_type == :time
-                        value = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "time-value").value
-                        sheet[x,y] = Duration.new(value)
-                      elsif value_type == :boolean
-                        value = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "boolean-value").value
-                        sheet[x,y] = (value == "true" ? true : false)
-                      elsif value_type == :string
-                        sheet[x,y] = p.content if p
+                        sheet[x,y].text = p.content.to_s if p
+                        cell_content = true
                       end
-                      sheet[x,y].text = p.content if p
+                      if annotation = cell.find("./office:annotation", XMLNS_OFFICE).first
+                        if text = annotation.find("./text:p", XMLNS_TEXT).first
+                          sheet[x,y].annotation = text.content.to_s
+                          cell_content = true
+                        end
+                      end
                     end
+                    repeated = (cell["number-columns-repeated"]||'1').to_i - 1
+                    if repeated > 0
+                      repeated.times do |i|
+                        sheet[x+i+1,y] = sheet[x,y]
+                      end if cell_content
+                      cell_offset += repeated
+                    end
+                    row_content = true if cell_content
                   end
+
+                  repeated = (row["number-rows-repeated"]||'1').to_i - 1
+                  if repeated > 0
+                    repeated.times do |i|
+                      sheet.row(sheet.rows(y), :row=>(y+i+1))
+                    end if row_content
+                    row_offset += repeated
+                  end
+                  
                 end
                 # What else ?
               end
@@ -235,12 +268,14 @@ module Spreet
           for sheet in spreet.sheets
             spreadsheet << table = LibXML::XML::Node.new("table", nil, nss[:table])
             add_attr(table, "name", sheet.name, nss[:table])
+            table << table_columns = LibXML::XML::Node.new("table-columns", nil, nss[:table])
             for x in 0..sheet.bound.x
-              table << table_column = LibXML::XML::Node.new("table-column", nil, nss[:table])
+              table_columns << table_column = LibXML::XML::Node.new("table-column", nil, nss[:table])
               add_attr(table_column, "style-name", "COL", nss[:table])
             end
+            table << table_rows = LibXML::XML::Node.new("table-rows", nil, nss[:table])
             sheet.each_row do |row| # #{record} in #{table.records_variable_name}\n"
-              table << table_row = LibXML::XML::Node.new("table-row", nil, nss[:table])
+              table_rows << table_row = LibXML::XML::Node.new("table-row", nil, nss[:table])
               for cell in row
                 table_row << table_cell = LibXML::XML::Node.new("table-cell", nil, nss[:table])
                 unless cell.empty?
@@ -263,6 +298,10 @@ module Spreet
                     add_attr(table_cell, "boolean-value", cell.value.to_s, nss[:office])
                   end
                   table_cell << LibXML::XML::Node.new("p", cell.text, nss[:text])
+                end
+                unless cell.annotation.nil?
+                  table_cell << annotation = LibXML::XML::Node.new("annotation", nil, nss[:office])
+                  annotation << LibXML::XML::Node.new("p", cell.annotation, nss[:text])
                 end
               end
             end

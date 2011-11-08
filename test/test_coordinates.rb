@@ -19,7 +19,7 @@ class TestCoordinates < Test::Unit::TestCase
     assert_equal([3, 24], Spreet::Coordinates.new(3,24).to_a)
     assert_equal({:x=>3, :y=>24}, Spreet::Coordinates.new(3,24).to_hash)
     assert_equal(24, Spreet::Coordinates.new(0,24).to_i)
-    assert_equal((3 << Spreet::Coordinates::CPU_SEMI_WIDTH)+24, Spreet::Coordinates.new(3,24).to_i)
+    assert_equal((3 << Spreet::Coordinates::X_BIT_SHIFT)+24, Spreet::Coordinates.new(3,24).to_i)
   end
 
   def test_sorting

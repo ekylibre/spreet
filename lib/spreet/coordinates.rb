@@ -1,10 +1,12 @@
+# encoding: UTF-8
 module Spreet
 
   # This class permit to manipulate coordinates in a table
   class Coordinates
     # Limit coordinates x and y in 0..65535 but coordinates are in one integer of 32 bits
-    CPU_SEMI_WIDTH = 16 # ((RUBY_PLATFORM.match(/^[^\-]*[^\-0-9]64/) ? 64 : 32) / 2).freeze
-    Y_FILTER = ((1 << CPU_SEMI_WIDTH) - 1).freeze
+    X_BIT_SHIFT = 20 # ((RUBY_PLATFORM.match(/^[^\-]*[^\-0-9]64/) ? 64 : 32) / 2).freeze
+    # 2²⁰ rows = 1_048_576,  2¹² cols = 4_096,
+    Y_FILTER = ((1 << X_BIT_SHIFT) - 1).freeze
 
     BASE_26_BEF = "0123456789abcdefghijklmnop"
     BASE_26_AFT = "abcdefghijklmnopqrstuvwxyz"
@@ -22,7 +24,7 @@ module Spreet
           @x, @y = value[0].to_i(10), value[1].to_i(10)
         end
       elsif value.is_a? Integer
-        @x, @y = (value >> CPU_SEMI_WIDTH), value & Y_FILTER
+        @x, @y = (value >> X_BIT_SHIFT), value & Y_FILTER
       elsif value.is_a? Coordinates
         @x, @y = value.x, value.y
       elsif value.is_a? Array
@@ -45,7 +47,7 @@ module Spreet
     end
     
     def to_i
-      (@x << CPU_SEMI_WIDTH) + @y
+      (@x << X_BIT_SHIFT) + @y
     end
 
     def ==(other_coordinate)

@@ -1,7 +1,6 @@
 # encoding: utf-8
 require 'helper'
 
-
 class TestCSV < Test::Unit::TestCase
   
   def test_read_and_write
