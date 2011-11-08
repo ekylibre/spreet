@@ -7,7 +7,7 @@ This gems is a handler for spreadsheets. With its independent API, it is possibl
 
 * CSV: UTF-8 with commas (Read & Write)
 * CSV for Excel: CP1252 with semicolons (Read & Write)
-* ODS: Open Document Format (Write only)
+* ODS: Open Document Format (Read & Write with restrictions)
 
 == Installation
 
@@ -40,7 +40,6 @@ This gems is a handler for spreadsheets. With its independent API, it is possibl
   
 == To do soon
 
-* ODS Reader 
 * Add style management for cells
 * Add Header/Footer
 * HTML Writer
