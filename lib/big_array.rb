@@ -1,15 +1,15 @@
 # encoding: utf-8
 
 # Class to manage big hash with lot of pairs
-class BigHash
+class BigArray
 
   def initialize(klass_name=nil, partition=8, levels=4)
     @partition = partition.to_i
     raise ArgumentError.new("Partition must be an integer > 0") unless @partition > 0
     @levels = levels.to_i
     raise ArgumentError.new("Levels must be an integer > 0") unless @levels > 0
-    klass_name ||= "BigHash#{@partition}_#{@levels}"
-    @base_class = "Hash"
+    klass_name ||= "#{self.class.name}#{@partition}_#{@levels}"
+    @base_class = "Array"
     code  = ""
     code << "class #{klass_name}\n"
     code << "  def initialize()\n"
