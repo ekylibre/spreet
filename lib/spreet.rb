@@ -3,7 +3,11 @@ require 'pathname'
 require 'duration'
 require 'money'
 require 'time'
+require 'big_hash'
 require 'spreet/coordinates'
+
+# Create class for Sheet hashes
+# BigHash.new("Sheet", 8, 7)
 
 module Spreet
 
@@ -98,7 +102,6 @@ module Spreet
 
   end
 
-
   class Sheet
     attr_reader :document, :name, :columns
     attr_accessor :current_row
@@ -108,7 +111,7 @@ module Spreet
       self.name = name
       raise ArgumentError.new("Must be a Document") unless document.is_a? Document
       @current_row = 0
-      @cells = {}
+      @cells = {} # BigHash::Sheet.new
       @bound = compute_bound
     end
 
