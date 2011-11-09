@@ -77,7 +77,7 @@ class TestSpreet < Test::Unit::TestCase
   
 
   def test_pascal
-    size = 25
+    size = 50
     doc = Spreet::Document.new
     sheet = doc.sheets.add("Pascal Tree")
     sheet[0,0] = 1

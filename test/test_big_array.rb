@@ -5,7 +5,7 @@ class TestBigArray < Test::Unit::TestCase
 
   def test_big_hash
     assert_nothing_raised do
-      BigArray.new("MyBigArray")
+      BigArray.new("MyBigArray", 2, 8)
     end
     array = nil
     assert_nothing_raised do

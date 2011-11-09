@@ -7,7 +7,7 @@ require 'big_array'
 require 'spreet/coordinates'
 
 # Create class for  arrays
-# BigArray.new("Cells", 10, 3)
+BigArray.new("Cells", 10, 3)
 
 module Spreet
 
@@ -111,7 +111,7 @@ module Spreet
       self.name = name
       raise ArgumentError.new("Must be a Document") unless document.is_a? Document
       @current_row = 0
-      @cells = {} # BigArray::Sheet.new
+      @cells = {} # BigArray::Cells.new
       @bound = compute_bound
     end
 
@@ -124,11 +124,6 @@ module Spreet
         raise ArgumentError.new("Name of sheet must be unique")
       end
       @name = value
-    end
-
-    def cells
-      @cells.delete_if{|k,v| v.empty?}
-      @cells.values
     end
 
     def next_row(increment = 1)
@@ -149,7 +144,7 @@ module Spreet
       value = args.delete_at(-1)
       cell = self[*args]
       cell.value = value
-      @bound = compute_bound
+      @updated = true
     end
 
     def row(*args)
@@ -171,7 +166,6 @@ module Spreet
     end
 
     def each_row(&block)
-      # @bound = compute_bound
       for j in 0..bound.y
         yield rows(j)
       end
@@ -183,13 +177,17 @@ module Spreet
     end
     
     def bound
-      @bound
+      if @updated
+        compute_bound
+      else
+        @bound
+      end
     end
 
     def remove!(coordinates)
       raise ArgumentError.new("Must be a Coordinates") unless document.is_a?(Coordinates)
       @cells.delete(coordinates.to_i)
-      @bound = compute_bound
+      @updated = true
     end
 
     # Moves the sheet to an other position in the list of sheets
@@ -211,13 +209,16 @@ module Spreet
 
     def compute_bound
       bound = Coordinates.new(0,0)
-      for id, cell in @cells
+      for index, cell in @cells
+      # for cell in @cells.compact
         unless cell.empty?
           bound.x = cell.coordinates.x if cell.coordinates.x > bound.x
           bound.y = cell.coordinates.y if cell.coordinates.y > bound.y
         end
       end
-      return bound
+      @updated = false
+      @bound = bound
+      return @bound
     end
 
   end
@@ -291,17 +292,6 @@ module Spreet
     
     def initialize(option={})
       @sheets = Sheets.new(self)
-    end
-    
-    def to_term
-      text = "Spreet (#{@sheets.count}):\n"
-      for sheet in @sheets
-        text << " - #{sheet.name}:\n"
-        for cell in sheet.cells.sort
-          text << "   - #{cell.coordinates.to_s}: #{cell.text.inspect}\n"
-        end
-      end
-      return text
     end
 
     def write(file, options={})
