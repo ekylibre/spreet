@@ -1,7 +1,7 @@
 # encoding: utf-8
 Gem::Specification.new do |s|
   s.name = "spreet"
-  File.open("VERSION", "rb") do |f|
+  File.open(File.join(File.dirname(__FILE__), "VERSION"), "rb") do |f|
     s.version = f.read
   end
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=

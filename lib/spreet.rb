@@ -13,7 +13,7 @@ module Spreet
 
   module VERSION
     version = nil
-    File.open("VERSION") {|f| version = f.read.split('.')}
+    File.open(File.join(File.dirname(__FILE__), "..", "VERSION")) {|f| version = f.read.split('.')}
     MAJOR = version[0].to_i.freeze
     MINOR = version[1].to_i.freeze
     TINY  = version[2].to_i.freeze

@@ -1,4 +1,6 @@
 # encoding: utf-8
+require 'bundler'
+Bundler::GemHelper.install_tasks
 
 require 'rake/testtask'
 Rake::TestTask.new(:test) do |test|
@@ -8,8 +10,3 @@ Rake::TestTask.new(:test) do |test|
 end
 
 task :default => :test
-
-# Import all rake files
-for rakefile in Dir.glob('lib/tasks/*.rake')
-  import(rakefile)
-end
