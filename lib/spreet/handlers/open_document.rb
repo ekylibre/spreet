@@ -137,8 +137,8 @@ module Spreet
                           sheet[x,y] = value.to_f
                         elsif value_type == :currency
                           value = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "value").value
-                          currency = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "currency").value
-                          sheet[x,y] = Money.new(value.to_f, currency)
+                          currency = Money::Currency.new(cell.attributes.get_attribute_ns(XMLNS_OFFICE, "currency").value)
+                          sheet[x,y] = Money.new(value.to_f * currency.subunit_to_unit, currency)
                         elsif value_type == :date
                           value = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "date-value").value
                           if value.match(/\d{1,8}-\d{1,2}-\d{1,2}/)
