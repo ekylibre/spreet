@@ -1,10 +1,13 @@
 # encoding: utf-8
-require 'zip/zip'
+require 'zip'
 require 'libxml'
+require 'money'
+require 'time'
+require 'duration'
 
 module Spreet
   module Handlers
-    class OpenDocument < Spreet::Handler
+    class OpenDocument < Spreet::Handlers::Base
       DATE_REGEXP = /\%./
       DATE_ELEMENTS = {
         "m" => "<number:month number:style=\"long\"/>",
@@ -62,7 +65,7 @@ module Spreet
 
       def self.read(file, options={})
         spreet = nil
-        Zip::ZipFile.open(file) do |zile|
+        Zip::File.open(file) do |zile|
           # Check mime_type
           entry = zile.find_entry "mimetype"
           if entry.nil?
@@ -135,7 +138,7 @@ module Spreet
                         elsif value_type == :currency
                           value = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "value").value
                           currency = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "currency").value
-                          sheet[x,y] = Money.new(value, currency)
+                          sheet[x,y] = Money.new(value.to_f, currency)
                         elsif value_type == :date
                           value = cell.attributes.get_attribute_ns(XMLNS_OFFICE, "date-value").value
                           if value.match(/\d{1,8}-\d{1,2}-\d{1,2}/)
@@ -202,9 +205,9 @@ module Spreet
         xml_escape << ".force_encoding('US-ASCII')" if xml_escape.respond_to?(:force_encoding)
         mime_type = MIME_ODS
         # name = #{table.model.name}.model_name.human.gsub(/[^a-z0-9]/i,'_')
-        Zip::ZipOutputStream.open(file) do |zile|
+        Zip::OutputStream.open(file) do |zile|
           # MimeType in first place
-          zile.put_next_entry('mimetype', nil, nil, Zip::ZipEntry::STORED)
+          zile.put_next_entry('mimetype', nil, nil, Zip::Entry::STORED)
           zile << mime_type
           
           # Manifest

@@ -1,7 +1,7 @@
 # encoding: utf-8
 require 'helper'
 
-class TestCoordinates < Test::Unit::TestCase
+class TestCoordinates < SpreetTest
   
   def test_importations
     assert_equal Spreet::Coordinates.new(0,0), Spreet::Coordinates.new("A1")

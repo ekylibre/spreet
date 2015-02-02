@@ -1,7 +1,7 @@
 # encoding: utf-8
 require 'helper'
 
-class TestDuration < Test::Unit::TestCase
+class TestDuration < SpreetTest
 
   # Test syntax like defined for xsd:duration
   def test_importations

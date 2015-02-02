@@ -1,12 +1,16 @@
-require 'rubygems'
-require 'test/unit'
+require 'bundler/setup'
+require 'minitest/autorun'
+
 require "digest/sha2"
 
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
+
 require 'spreet'
 
-class Test::Unit::TestCase
+FileUtils.mkdir_p("tmp") unless File.exist?("tmp")
+
+class SpreetTest < MiniTest::Test
 
   def assert_checksums(expected, actual, message=nil)
     checksums = []
@@ -21,4 +25,22 @@ class Test::Unit::TestCase
     assert_equal checksums[0], checksums[1], message
   end
 
+  def assert_nothing_raised(*args, &block)
+    yield
+  end
+
+  def assert_raise(exception, *args, &block)
+    begin
+      yield
+      assert false, "No #{exception.name} raised."
+    rescue exception => e
+      assert e.class == exception, *args
+    end
+  end
+  
+  def assert_not_nil(value, *args)
+    assert !value.nil?, *args
+  end
+  
+  
 end

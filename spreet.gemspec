@@ -1,26 +1,29 @@
 # encoding: utf-8
-Gem::Specification.new do |s|
-  s.name = "spreet"
-  File.open(File.join(File.dirname(__FILE__), "VERSION"), "rb") do |f|
-    s.version = f.read
-  end
-  s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
-  s.author = "Brice Texier"
-  s.email  = "brice.texier@ekylibre.org"
-  s.summary = "Spr[eadsh]eet handler"
-  s.description = "Spr[eadsh]eet handler for CSV(RW), Excel CSV(RW) and ODS(W)."+
+$:.push File.expand_path("../lib", __FILE__)
+require "spreet/version"
+
+Gem::Specification.new do |spec|
+  spec.name = "spreet"
+  spec.version = Spreet::VERSION::STRING
+  spec.required_rubygems_version = ">= 1.9.2"
+  spec.author = "Brice Texier"
+  spec.email  = "brice.texier@ekylibre.org"
+  spec.summary = "Spr[eadsh]eet handler"
+  spec.description = "Spr[eadsh]eet handler for CSV(RW), Excel CSV(RW) and ODS(RW)."+
     " The goal is to read and write in many open formats."
-  s.extra_rdoc_files = [ "MIT-LICENSE", "README.rdoc" ]
-  s.test_files = `git ls-files test/test_*.rb`.split("\n") 
-  exclusions = [ "#{s.name}.gemspec", ".travis.yml", ".gitignore", "Gemfile", "Rakefile" ]
-  s.files = `git ls-files`.split("\n").delete_if{|f| exclusions.include?(f)}
-  s.homepage = "http://github.com/burisu/spreet"
-  s.license = "MIT"
-  s.require_path = "lib"
-  add_runtime_dependency = (s.respond_to?(:add_runtime_dependency) ? :add_runtime_dependency : :add_dependency)
-  s.send(add_runtime_dependency, "fastercsv", [">= 0"])
-  s.send(add_runtime_dependency, "libxml-ruby", [">= 0"])
-  s.send(add_runtime_dependency, "rubyzip", [">= 0.9.4"])
-  s.send(add_runtime_dependency, "money", [">= 4.0.0"])
+  spec.extra_rdoc_files = [ "MIT-LICENSE", "README.rdoc" ]
+  spec.test_files = `git ls-files test/test_*.rb`.split("\n") 
+  exclusions = [ "#{spec.name}.gemspec", ".travis.yml", ".gitignore", "Gemfile", "Rakefile" ]
+  spec.files = `git ls-files`.split("\n").delete_if{|f| exclusions.include?(f)}
+  spec.homepage = "http://github.com/burisu/spreet"
+  spec.license = "MIT"
+  spec.require_path = "lib"
+  spec.add_dependency("libxml-ruby", [">= 0"])
+  spec.add_dependency("rubyzip", [">= 1.0.0"])
+  spec.add_dependency("money", [">= 4.0.0"])
+  spec.add_dependency("i18n", ["< 0.7.0"])
+  spec.add_development_dependency('minitest')
+  spec.add_development_dependency('rake', '>= 10')
+  spec.add_development_dependency('bundler', '> 1')  
 end
 

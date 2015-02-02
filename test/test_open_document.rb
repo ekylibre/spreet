@@ -1,7 +1,7 @@
 # encoding: utf-8
 require 'helper'
 
-class TestOpenDocument < Test::Unit::TestCase
+class TestOpenDocument < SpreetTest
 
   def test_read_and_write
     doc = nil
@@ -10,7 +10,7 @@ class TestOpenDocument < Test::Unit::TestCase
     end
 
     assert_nothing_raised do
-      doc.write("test/samples/rewrited-pascal.ods")
+      doc.write("tmp/rewrited-pascal.ods")
     end
   end
 

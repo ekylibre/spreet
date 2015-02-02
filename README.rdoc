@@ -1,6 +1,10 @@
 = Spreet
+{<img src="https://badge.fury.io/rb/spreet.png" alt="Gem Version" />}[http://badge.fury.io/rb/spreet]
+{<img src="https://secure.travis-ci.org/ekylibre/spreet.png"/>}[http://travis-ci.org/ekylibre/spreet]
 
 Universal handler for spr[eadsh]eets.
+
+Compatible with Ruby ≥ 1.9.2.
 
 == Why ?
 This gems is a handler for spreadsheets. With its independent API, it is possible to create, update files in some formats. Today the list is not very long:
@@ -24,7 +28,7 @@ This gems is a handler for spreadsheets. With its independent API, it is possibl
   # ...or more classic style...
   sheet[1,0] = "First name"
   # ...or if necessary as a Hash
-  sheet[:x=>2, :y=>0] = "Born on"
+  sheet[x: 2, y: 0] = "Born on"
 
   sheet.next_row
   for person in People.all
@@ -37,13 +41,13 @@ This gems is a handler for spreadsheets. With its independent API, it is possibl
   sheet.write("people-2.csv", :format=>:xcsv) # CSV for Excel
   # or write it as an Open Document Spreadsheet
   sheet.write("people-3.ods")
+
+  # Read an existing document
+  doc = Spreet::Document.read("doc.ods")
   
-== To do soon
+== To do
 
 * Add style management for cells
 * Add Header/Footer
 * HTML Writer
-* PDF Writer like OpenOffice/LibreOffice would make it
-
-== Travis
-{<img src="https://secure.travis-ci.org/burisu/spreet.png"/>}[http://travis-ci.org/burisu/spreet]
+* PDF Writer like LibreOffice would make it

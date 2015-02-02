@@ -1,25 +1,9 @@
 module Spreet
-
-  # Default handler
-  class Handler
-
-    def self.read(file, options={})
-      raise NotImplementedError.new
-    end
-
-    def self.write(spreet, file, options={})
-      raise NotImplementedError.new
-    end
-    
+  module Handlers
+    autoload :Base,         'spreet/handlers/base'
+    autoload :CSV,          'spreet/handlers/csv'
+    autoload :ExcelCSV,     'spreet/handlers/excel_csv'
+    autoload :OpenDocument, 'spreet/handlers/open_document'
   end
-
 end
 
-require 'spreet/handlers/csv'
-require 'spreet/handlers/open_document'
-
-Spreet::Document.register_handler Spreet::Handlers::CSV, :csv
-Spreet::Document.register_handler Spreet::Handlers::ExcelCSV, :xcsv
-# Spreet::Document.register_handler Spreet::Handlers::HTML, :html
-Spreet::Document.register_handler Spreet::Handlers::OpenDocument, :ods
-# Spreet::Document.register_handler Spreet::Handlers::PDF, :pdf
